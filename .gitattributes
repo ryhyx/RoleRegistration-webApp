@@ -1,5 +1,5 @@
 *.django linguist-detectable=true 
-*.html linguist-detectable=false
+*.html linguist-detectable=true
 *.xml linguist-detectable=false
 *.py linguist-detectable=true
 *.js linguist-detectable=true
