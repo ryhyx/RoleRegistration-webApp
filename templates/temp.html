@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+        }
+
+        form {
+            border: 2px solid #000000;
+            padding: 10px;
+            margin: 10px;
+            border-radius: 10px;
+            background-color: #a0c0ff;
+        }
+
+        input[type=text], input[type=password], select {
+            width: 100%;
+            padding: 12px 20px;
+            margin: 8px 0;
+            display: inline-block;
+            border: 1px solid #000000;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        input[type=submit], input[type=reset] {
+            width: 45%;
+            background-color: #f78181;
+            color: white;
+            padding: 14px 20px;
+            margin: 8px 0;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        input[type=submit]:hover, input[type=reset]:hover {
+            background-color: #ff4500;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        th, td {
+            border: 1px solid #000000;
+            padding: 15px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #000000;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background-color: #ffffff;
+        }
+
+        .actions {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .actions button {
+            background-color: #ff0000;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            margin: 5px;
+            cursor: pointer;
+        }
+
+        .actions button:hover {
+            background-color: #ff4500;
+        }
+    </style>
+</head>
+
+<body>
+<form id="myForm">
+    {% csrf_token %}
+    <input type="hidden" id="id_hidden" name="id_hidden" value="{{ result_per_user.0 }}" >
+    <label for="firstName">First Name:</label><br>
+    <input type="text" id="firstname" name="firstName" value="{{result_per_user.1}}"><br>
+    <label for="lastName">Last Name:</label><br>
+    <input type="text" id="lastname" name="lastName" value="{{result_per_user.2}}"><br>
+    <label for="password">Password:</label><br>
+    <input type="password" id="password" name="password" value="{{result_per_user.3}}"><br>
+    <label for="accessPermission">Access Permission:</label><br>
+   <select id="accessPermission" name="accessPermission">
+    <option value="1" {% if result_per_user.4 == 1 %}selected{% endif %}>Admin</option>
+    <option value="0" {% if result_per_user.4 == 0 %}selected{% endif %}>Customer</option>
+</select>
+    <br>
+    <input type="submit" id="create" value="create/update">
+    <input type="reset" value="Cancel">
+</form>
+<table id="myTable">
+    <tr>
+        <th>ID</th>
+        <th>First Name</th>
+        <th>Last Name</th>
+        <th>Password</th>
+        <th>Role</th>
+        <th>Access Permission</th>
+    </tr>
+    {% for file in result %}
+        <tr>
+            <td>{{ file.0 }}</td>
+            <td>{{ file.1 }}</td>
+            <td>{{ file.2 }}</td>
+            <td>{{ file.3 }}</td>
+        <td>
+            {% if file.4 == 1 %}
+                Admin
+            {% else %}
+                Customer
+            {% endif %}
+        </td>
+            <td>
+                <button class="update-btn btn btn-sm btn-info" data-id="{{ file.0 }}">Update</button>
+                <button class="" onclick='doAction("DELETE", "are u sure?")' data-id="{{ file.0 }}">Delete</button>
+
+            </td>
+        </tr>
+    {% endfor %}
+
+
+</table>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    function doAction(action, message) {
+        if (confirm(message)) {
+            function getCookie(name) {
+            var cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                var cookies = document.cookie.split(';');
+                for (var i = 0; i < cookies.length; i++) {
+                    var cookie = jQuery.trim(cookies[i]);
+                    // Check if the cookie name matches with the CSRF token cookie name
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+            var formData = {
+                deleteUserId: $("#id_hidden").val(),
+            };
+                        // Include CSRF token in the request headers
+            $.ajaxSetup({
+                headers: {
+                    "X-CSRFToken": getCookie("csrftoken")
+                }
+            });
+
+            $.ajax({
+                type: "POST",
+                url: "/delete/",
+                data: formData,
+                success: function (data) {
+                    console.log("Ajax request successful");
+                    console.log(data); // Log the data returned by the server
+                    location.reload();
+                },
+                error: function (error) {
+                    // Handle error response, if needed
+                    console.log(error);
+                }
+            });
+        } else {
+            alert('Canceled')
+        }
+    }
+</script>
+<script>
+  $(document).ready(function() {
+    // Function to get CSRF cookie value
+    function getCookie(name) {
+        var cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = jQuery.trim(cookies[i]);
+                // Check if the cookie name matches with the CSRF token cookie name
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Handle form submission
+    $("#myForm").submit(function(e) {
+        e.preventDefault(); // Prevent the form from submitting in the traditional way
+
+        // Collect form data
+        var formData = {
+            id_hidden: $("#id_hidden").val(),
+            firstName: $("#firstname").val(),
+            lastName: $("#lastname").val(),
+            password: $("#password").val(),
+            accessPermission: $("#accessPermission").val()
+        };
+
+        // Include CSRF token in the request headers
+        $.ajaxSetup({
+            headers: {
+                "X-CSRFToken": getCookie("csrftoken")
+            }
+        });
+
+        // Send AJAX request
+        $.ajax({
+            type: "POST",
+            url: "/save/",
+            data: formData,
+            success: function(data) {
+                console.log("Ajax request successful");
+                console.log(data); // Log the data returned by the server
+                location.reload();
+            },
+            error: function(error) {
+                // Handle error response, if needed
+                console.log(error);
+                setTimeout(function() {
+                // Redirect the user to the /index/ URL after the update is done
+                 window.location.href = "/index/";
+                }, 1000);
+            }
+        });
+    });
+
+    // Additional JavaScript code goes here
+
+});
+
+  $(document).ready(function() {
+    $(".update-btn").click(function() {
+      var dataId = $(this).data("id"); // Get the value of data-id attribute
+
+      // Build the URL with the data-id as a query parameter
+      var url = "/update?user_id=" + encodeURIComponent(dataId);
+
+      // Redirect the user to the URL
+      window.location.href = "/index";
+    });
+  });
+
+
+</script>
+
+
+</body>
+</html>
